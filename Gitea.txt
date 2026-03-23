@@ -1,0 +1,89 @@
+Guía de Instalación y Uso de Gitea para Windows Server 2012
+Esta guía está diseñada para que puedas instalar Gitea en el servidor con IP 192.168.17.145 y configurar el flujo de trabajo para desarrolladores y QA.
+1. Descarga de Archivos Necesarios
+Antes de empezar, descarga estos dos archivos en el servidor. Nota importante: Como Windows Server 2012 es un sistema antiguo, usaremos versiones específicas que sabemos que funcionan bien.
+Git para Windows (Versión 2.46.2): Es el motor que hace funcionar todo. No descargues una versión más nueva, ya que no son compatibles con Server 2012.
+(https://github.com/git-for-windows/git/releases/download/v2.46.2.windows.1/Git-2.46.2-64-bit.exe)
+Gitea (Versión 1.20.6): Es la interfaz visual y el servidor. Usamos la 1.20 porque las versiones más recientes requieren componentes de Windows más modernos.
+(https://dl.gitea.com/gitea/1.20.6/gitea-1.20.6-windows-4.0-amd64.exe)
+SQLite: No necesitas descargar nada. Gitea ya trae SQLite incluido por dentro, por lo que no hace falta instalar una base de datos aparte.
+2. Instalación Paso a Paso
+Paso A: Instalar Git
+Ejecuta el instalador de Git que descargaste (Git-2.46.2-64-bit.exe). Dale a "Next" a todo, dejando las opciones por defecto, hasta que termine.
+Paso B: Preparar la carpeta de Gitea
+Ve a tu disco C: y crea una carpeta llamada gitea.
+Copia el archivo de Gitea que descargaste (gitea-1.20.6-windows-4.0-amd64.exe) dentro de esa carpeta.
+IMPORTANTE: Cambia el nombre del archivo a simplemente gitea.exe. (Asegúrate de que no se llame gitea.exe.exe).
+Paso C: Primer Inicio y Configuración Web
+Abre una consola (CMD) como administrador.
+Escribe estos comandos:
+cd C:\gitea
+gitea.exe web
+
+
+Ahora, desde cualquier computadora de la oficina, abre el navegador y entra a: http://192.168.17.145:3000.
+Verás la pantalla de instalación. Configura estos puntos clave:
+Tipo de base de datos: Elige SQLite3. No toques la ruta que sale por defecto.
+Dominio del servidor: Pon 192.168.17.145.
+URL de Gitea: Pon http://192.168.17.145:3000/.
+Haz clic en Instalar Gitea. Espera un minuto y verás la pantalla principal.
+3. Conexión con el Directorio Activo (Usuarios de la Empresa)
+Para que tus empleados entren con su usuario de Windows, haz esto:
+Entra a Gitea como administrador.
+Ve a Panel de administración > Fuentes de autenticación > Añadir nueva fuente.
+Configura así:
+Tipo de autenticación: LDAP (vía BindDN).
+Nombre: Directorio Activo.
+Host: (IP de tu servidor de dominio).
+Puerto: 389.
+DN de búsqueda de usuario: OU=Usuarios,DC=tuempresa,DC=com (ajusta esto según tu empresa).
+Filtro de usuario: (&(objectCategory=Person)(sAMAccountName=%s)).
+Atributo de nombre de usuario: sAMAccountName.
+Ahora, cuando un desarrollador intente iniciar sesión con su cuenta de Windows, Gitea lo creará automáticamente.
+4. Manual de Comandos (Para Desarrolladores y QA)
+Los comandos se escriben en la "Git Bash" o terminal de cada computadora.
+Para Desarrolladores (Subir cambios a qa-prod)
+Subir TODO el proyecto por primera vez (Masivo):
+git init
+git remote add origin http://192.168.17.145:3000/tu-repo.git
+git add.
+git commit -m "Carga masiva inicial"
+git push -u origin qa-prod
+
+
+Subir solo un archivo específico:
+git add ruta/del/archivo.txt
+git commit -m "Subiendo solo un archivo"
+git push origin qa-prod
+
+
+Para QA (Bajar cambios para probar)
+Descargar todo el proyecto (Masivo):
+git clone http://192.168.17.145:3000/tu-repo.git
+
+
+Actualizar a lo último que subieron los desarrolladores:
+git pull origin qa-prod
+
+
+Bajar un solo archivo del servidor (sin bajar todo lo demás):
+git fetch origin
+git checkout origin/qa-prod -- ruta/del/archivo.txt
+
+
+5. Cómo usar el Entorno Visual (Gitea Web)
+Gitea es muy parecido a GitHub. Aquí te explico lo básico:
+Explorar Código: Haz clic en el nombre del repositorio. Verás las carpetas y archivos. Puedes hacer clic en cualquier archivo para ver su contenido directamente en el navegador.
+Historial: Haz clic en el botón de Commits (parece un reloj). Ahí verás quién subió cambios, qué archivos tocó y qué mensajes puso.
+Gestionar la rama qa-prod:
+Ve a Configuración (Settings) del repositorio > Ramas (Branches).
+En Ramas protegidas, añade una regla para qa-prod.
+Activa la opción "Restringir el push" y selecciona solo al equipo de Desarrolladores. Así, los de QA no podrán borrar nada por error.
+Cargar archivos desde la web: Si no quieres usar comandos, dentro de una carpeta en Gitea verás un botón que dice Subir archivo. Puedes arrastrar y soltar varios archivos a la vez.
+6. Dejar Gitea funcionando siempre (Servicio de Windows)
+Si cierras la consola negra (CMD), Gitea se apaga. Para que esté siempre prendido, abre un CMD como administrador y pega este comando:
+sc.exe create gitea start= auto binPath= "\"C:\gitea\gitea.exe\" web --config \"C:\gitea\custom\conf\app.ini\""
+
+
+Luego ve a los "Servicios" de Windows, busca el que se llama gitea y dale a Iniciar.
+¡Listo! Ya tienes tu servidor Git profesional en la IP 192.168.17.145.
